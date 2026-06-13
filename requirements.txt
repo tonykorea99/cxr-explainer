@@ -1,0 +1,14 @@
+torch==2.7.1
+torchvision==0.22.1
+transformers==4.40.0
+opencv-python
+albumentations
+accelerate
+einops
+pillow
+matplotlib
+pyarrow
+sentencepiece
+protobuf
+google-genai
+python-dotenv

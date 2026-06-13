@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.cache/
+~/.cache/huggingface/
+*.safetensors
+*.bin
+samples/*.jpg
+samples/*.png
+samples/*.jpeg
