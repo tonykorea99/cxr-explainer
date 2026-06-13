@@ -140,9 +140,18 @@ cp /path/to/my_xray.jpg samples/
 
 ## 실행
 
+### 바로 실행 
+
+> 이미 셋업된 서버(`/home/hail/cxr-explainer`)를 사용하는 경우, 클론·환경 생성·의존성 설치·API 키 입력·데이터 다운로드가 모두 불필요합니다.
+
+
 ```bash
-conda activate ~/cxr-explainer/.venv
 cd ~/cxr-explainer
+conda activate ~/cxr-explainer/.venv
+python main.py samples/pneumonia.jpeg   # 단일 이미지 전체 파이프라인(비정상하나 sample에 있는거 꺼내서 씀)
+python demo.py --label PNEUMONIA      # 폐렴 케이스만
+python demo.py --balanced --n 2       # 정상 1 + 폐렴 1
+python demo.py --seed 7               # 다른 랜덤 한 장 (숫자 바꿀 때마다 다른 이미지)                          
 ```
 
 ### main.py — 단일 이미지
