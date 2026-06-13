@@ -12,3 +12,4 @@ sentencepiece
 protobuf
 google-genai
 python-dotenv
+kagglehub  # demo.py 데이터 다운로드용 (Kaggle 인증 필요)
