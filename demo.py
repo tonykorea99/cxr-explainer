@@ -1,6 +1,8 @@
 import argparse
+import math
 import random
 import time
+from collections import Counter
 from pathlib import Path
 
 
@@ -31,6 +33,27 @@ def _collect(dataset_root: Path, split: str) -> list[tuple[Path, str]]:
     return samples
 
 
+def _sample(
+    all_images: list[tuple[Path, str]],
+    n: int,
+    seed: int,
+    label: str,
+    balanced: bool,
+) -> list[tuple[Path, str]]:
+    rng = random.Random(seed)
+    if label != "both":
+        pool = [(p, l) for p, l in all_images if l == label]
+        return rng.sample(pool, min(n, len(pool)))
+    if balanced:
+        normals = [(p, l) for p, l in all_images if l == "NORMAL"]
+        pneumonias = [(p, l) for p, l in all_images if l == "PNEUMONIA"]
+        k = math.ceil(n / 2)
+        picked = rng.sample(normals, min(k, len(normals))) + rng.sample(pneumonias, min(k, len(pneumonias)))
+        rng.shuffle(picked)
+        return picked[:n]
+    return rng.sample(all_images, min(n, len(all_images)))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Randomly sample chest X-rays and run the full pipeline."
@@ -43,6 +66,10 @@ def main() -> None:
                         help="Random seed for reproducible sampling (default: 42)")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"],
                         help="Dataset split to sample from (default: test)")
+    parser.add_argument("--label", default="both", choices=["NORMAL", "PNEUMONIA", "both"],
+                        help="Class to sample from: NORMAL, PNEUMONIA, or both (default: both)")
+    parser.add_argument("--balanced", action="store_true",
+                        help="When --label=both, sample ceil(n/2) from each class")
     parser.add_argument("--findings-only", action="store_true",
                         help="Print CheXagent findings only; skip Gemini explanation")
     args = parser.parse_args()
@@ -53,8 +80,10 @@ def main() -> None:
         print(f"No images found under {dataset_root / args.split}")
         return
 
-    n = min(args.n, len(all_images))
-    sampled = random.Random(args.seed).sample(all_images, n)
+    counts = Counter(l for _, l in all_images)
+    print(f"[pool] seed={args.seed}  NORMAL={counts['NORMAL']}  PNEUMONIA={counts['PNEUMONIA']}  total={len(all_images)}")
+
+    sampled = _sample(all_images, args.n, args.seed, args.label, args.balanced)
 
     from vision import extract_findings
     if not args.findings_only:
@@ -64,7 +93,7 @@ def main() -> None:
 
     for idx, (img_path, label) in enumerate(sampled):
         print(SEP)
-        print(f"[{idx + 1}/{n}]  {img_path.name}  |  라벨: {label}")
+        print(f"[{idx + 1}/{len(sampled)}]  {img_path.name}  |  라벨: {label}")
         print()
 
         findings = extract_findings(str(img_path))
@@ -75,8 +104,7 @@ def main() -> None:
             print()
             print("[ 한국어 설명 ]")
             print(explain(findings))
-            # Avoid hitting Gemini rate limit when sampling multiple images
-            if idx < n - 1:
+            if idx < len(sampled) - 1:
                 time.sleep(1.5)
 
         print()
